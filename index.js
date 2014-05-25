@@ -14,7 +14,7 @@
  * 需要去除注释内的引用
  * @param content
  */
-function analyzeHtml(content, pathMap){
+function analyzeHtml(content, pathMap) {
     var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>\r?\n|$)|<(link)\s+[\s\S]*?["'\s\w\/\-](?:>\r?\n|$)|<!--([\s\S]*?)(?:-->\r?\n|$)/ig;
     var match;
     var resources = {
@@ -22,32 +22,37 @@ function analyzeHtml(content, pathMap){
         inlineScripts: [],
         styles: []
     };
-    var replaced = content.replace(reg, function(m, $1, $2, $3, $4){
+    var replaced = content.replace(reg, function (m, $1, $2, $3, $4) {
         //$1为script标签, $2为内嵌脚本内容, $3为link标签, $4为注释内容
-        if ($1){
-            if ($2){
+        if ($1) {
+            if ($2) {
                 //如果标签设置了data-fixed则不会收集此资源
-                if (/(\sdata-fixed\s*=\s*)('true'|"true")/ig.test($1)){
+                if (/(\sdata-fixed\s*=\s*)('true'|"true")/ig.test($1)) {
                     return m;
                 }
                 resources.inlineScripts.push({content: m });
-            }else{
+            } else {
                 result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
-                if (result && (result[2] || result[3])){
-                    var jsUrl =  result[2] || result[3];
+                if (result && (result[2] || result[3])) {
+                    var jsUrl = result[2] || result[3];
                     //不在资源表中的资源不处理
                     if (!pathMap[jsUrl])
                         return m;
+                    var single = false;
+                    if (/(\sdata-single\s*=\s*)('true'|"true")/ig.test($1)) {
+                        single = true;
+                    }
                     resources.scripts.push({
                         content: m,
-                        id: pathMap[jsUrl]
+                        id: pathMap[jsUrl],
+                        single: single
                     });
                 }
             }
-        }else if ($3){
+        } else if ($3) {
             var isCssLink = false;
             var result = m.match(/\srel\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+)/i);
-            if(result && result[1]){
+            if (result && result[1]) {
                 var rel = result[1].replace(/^['"]|['"]$/g, '').toLowerCase();
                 isCssLink = rel === 'stylesheet';
             }
@@ -55,8 +60,8 @@ function analyzeHtml(content, pathMap){
             if (!isCssLink)
                 return m;
             result = m.match(/(?:\shref\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
-            if (result && (result[2] || result[3])){
-                var cssUrl =  result[2] || result[3];
+            if (result && (result[2] || result[3])) {
+                var cssUrl = result[2] || result[3];
                 if (!pathMap[cssUrl])
                     return m;
                 resources.styles.push({
@@ -64,7 +69,7 @@ function analyzeHtml(content, pathMap){
                     id: pathMap[cssUrl]
                 })
             }
-        }else if ($4){
+        } else if ($4) {
             //不处理注释
             return m;
         }
@@ -76,9 +81,9 @@ function analyzeHtml(content, pathMap){
     }
 }
 
-function getResourcePathMap(ret){
+function getResourcePathMap(ret) {
     var map = {};
-    fis.util.map(ret.map.res, function(subpath, file){
+    fis.util.map(ret.map.res, function (subpath, file) {
         map[file.uri] = subpath;
     });
     return map
@@ -93,13 +98,17 @@ function getResourcePathMap(ret){
  * @param opt
  * @returns {Array}
  */
-function getPkgResource(resources, ret, settings, conf, opt){
+function getPkgResource(resources, ret, settings, conf, opt) {
     var pkgs = {};
     var list = [];
-    resources.forEach(function(resource){
+    var handled = {};
+    resources.forEach(function (resource) {
         var id = resource.id;
+        if (handled[id])
+            return false;
         var res = ret.map.res[id];
-        if (res.pkg){
+        handled[id] = true;
+        if (res.pkg) {
             if (pkgs[res.pkg])
                 return false;
             pkgs[res.pkg] = true;
@@ -107,10 +116,11 @@ function getPkgResource(resources, ret, settings, conf, opt){
                 type: 'pkg',
                 id: res.pkg
             })
-        }else{
+        } else {
             list.push({
                 type: 'res',
-                id: id
+                id: id,
+                single: resource.single
             })
         }
     });
@@ -126,47 +136,47 @@ function getPkgResource(resources, ret, settings, conf, opt){
  * @param opt
  * @returns {Array}
  */
-function autoCombine(resList, ret, settings, conf, opt){
+function autoCombine(resList, ret, settings, conf, opt) {
     var list = [];
     var toCombine = [];
-    var fileMap = {};
     var combineCount = 0;
     var fileExt;
-    function flushCombine(){
-        if (toCombine.length == 1){
+
+    function flushCombine() {
+        if (toCombine.length == 1) {
             //单独的文件不进行处理
             list.push(toCombine[0]);
             toCombine = [];
             return;
         }
-        if (toCombine.length !== 0){
+        if (toCombine.length !== 0) {
             var content = '';
             var index = 0;
             var has = [];
-            toCombine.forEach(function(res){
-                var file = fileMap[res.id];
+            toCombine.forEach(function (res) {
+                var file = ret.ids[res.id];
                 var c = file.getContent();
                 has.push(file.getId());
-                if (!fileExt){
+                if (!fileExt) {
                     fileExt = file.isJsLike ? 'js' : 'css';
                 }
-                if(c != ''){
-                    if(index++ > 0){
+                if (c != '') {
+                    if (index++ > 0) {
                         content += '\n';
-                        if(file.isJsLike){
+                        if (file.isJsLike) {
                             content += ';';
-                        } else if(file.isCssLike){
+                        } else if (file.isCssLike) {
                             c = c.replace(/@charset\s+(?:'[^']*'|"[^"]*"|\S*);?/gi, '');
                         }
                     }
                     content += c;
                 }
             });
-            var subpath = 'pkg/auto_combine_${index}'.replace('${index}',combineCount)+ '.' + fileExt;
+            var subpath = 'pkg/auto_combine_${index}'.replace('${index}', combineCount) + '.' + fileExt;
             var file = fis.file(fis.project.getProjectPath(), subpath);
             ret.pkg[file.subpath] = file;
             file.setContent(content);
-            var id = "auto_"+fileExt+"_"+combineCount;
+            var id = "auto_" + fileExt + "_" + combineCount;
             ret.map.pkg[id] = {
                 uri: file.getUrl(opt.hash, opt.domain),
                 type: fileExt,
@@ -181,43 +191,54 @@ function autoCombine(resList, ret, settings, conf, opt){
         }
     }
 
-    fis.util.map(ret.src, function(subpath, file) {
-        fileMap[file.getId()] = file;
-    });
-
-    resList.forEach(function(res){
-        if (res.type === 'pkg'){
+    resList.forEach(function (res) {
+        if (res.type === 'pkg') {
             flushCombine();
             list.push(res);
-        }else{
-            toCombine.push(res);
+        } else {
+            if (res.single) {
+                flushCombine();
+                list.push(res);
+            } else {
+                toCombine.push(res);
+            }
         }
     });
     flushCombine();
     return list;
 }
 
-function injectJs(jsList, content, ret){
+function injectJs(jsList, content, ret) {
+    function getCharset() {
+        var charset = fis.config.get('project.charset');
+        switch (charset) {
+            case 'utf8':
+                return 'utf-8';
+            default:
+                return charset;
+        }
+    }
+
     var script = '';
-    jsList.forEach(function(js){
+    jsList.forEach(function (js) {
         var uri;
-        if (js.type === 'pkg'){
+        if (js.type === 'pkg') {
             uri = ret.map.pkg[js.id].uri;
-        }else{
+        } else {
             uri = ret.map.res[js.id].uri;
         }
-        script += '<script src="' + uri + '"></script>\r\n';
+        script += '<script type="text/javascript" charset="' + getCharset() + '" src="' + uri + '"></script>\r\n';
     });
     return content.replace(/<\/body>/, script + '\n$&');
 }
 
-function injectCss(cssList, content, ret){
+function injectCss(cssList, content, ret) {
     var css = '';
-    cssList.forEach(function(js){
+    cssList.forEach(function (js) {
         var uri;
-        if (js.type === 'pkg'){
+        if (js.type === 'pkg') {
             uri = ret.map.pkg[js.id].uri;
-        }else{
+        } else {
             uri = ret.map.res[js.id].uri;
         }
         css += '<link rel="stylesheet" href="' + uri + '">\r\n';
@@ -225,25 +246,25 @@ function injectCss(cssList, content, ret){
     return content.replace(/<\/head>/, css + '\n$&');
 }
 
-function injectInlineJs(inlineScripts, content, ret){
+function injectInlineJs(inlineScripts, content, ret) {
     var inline = '';
-    inlineScripts.forEach(function(script){
+    inlineScripts.forEach(function (script) {
         inline += script.content;
     });
     return content.replace(/<\/body>/, inline + '\n$&');
 }
 
-module.exports = function(ret, settings, conf, opt){ //打包后处理
+module.exports = function (ret, settings, conf, opt) { //打包后处理
     if (!opt.pack)
         return;
     var pathMap = getResourcePathMap(ret);
-    fis.util.map(ret.src, function(subpath, file){
-        if(file.isHtmlLike && file.noMapJs !== false){ //类html文件
+    fis.util.map(ret.src, function (subpath, file) {
+        if (file.isHtmlLike && file.noMapJs !== false) { //类html文件
             var content = file.getContent();
             var result = analyzeHtml(content, pathMap);
             var jsList = getPkgResource(result.resources.scripts, ret);
             var cssList = getPkgResource(result.resources.styles, ret);
-            if (conf.autoCombine !== false){
+            if (conf.autoCombine !== false) {
                 jsList = autoCombine(jsList, ret, settings, conf, opt);
                 cssList = autoCombine(cssList, ret, settings, conf, opt);
             }
