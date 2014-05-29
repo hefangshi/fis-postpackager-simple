@@ -1,6 +1,6 @@
 {
-  "name": "fis-postpackager-reqmin",
-  "version": "0.0.1",
+  "name": "fis-postpackager-simple",
+  "version": "0.0.0",
   "description": "a postpackager plugin for fis to auto replace pack resource and auto combine resources",
   "main": "index.js",
   "scripts": {
@@ -8,13 +8,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/hefangshi/fis-postpackager-reqmin"
+    "url": "https://github.com/hefangshi/fis-postpackager-simple"
   },
   "keywords": [
     "fis",
     "postpackager",
     "package",
-    "reqmin"
+    "simple"
   ],
   "author": "hefangshi",
   "license": "MIT"
