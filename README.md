@@ -1,4 +1,4 @@
-# fis-postpackager-reqmin
+# fis-postpackager-simple
 
 用于自动打包页面零散资源和应用打包资源的[FIS](https://github.com/fex-team/fis/)插件
 
@@ -18,14 +18,14 @@
 
 ## 用法
 
-    $ npm install -g fis-postpackager-reqmin
+    $ npm install -g fis-postpackager-simple
     $ vi path/to/project/fis-conf.js
 
 ```javascript
 //file : path/to/project/fis-conf.js
-fis.config.set('modules.postpackager', 'reqmin');
+fis.config.set('modules.postpackager', 'simple');
 //关闭autoCombine可以设置是否将零散资源进行打包
-//fis.config.set('settings.postpackager.reqmin.autoCombine', false);
+//fis.config.set('settings.postpackager.simple.autoCombine', false);
 ```
 
 ## 适应范围
@@ -35,7 +35,3 @@ fis.config.set('modules.postpackager', 'reqmin');
 ## DEMO
 
 https://github.com/hefangshi/fis-quickstart-demo
-
-```
-$ fis release -pmDf fis-conf-reqmin.js
-```
