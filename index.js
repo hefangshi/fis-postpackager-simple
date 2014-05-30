@@ -6,6 +6,8 @@
 'use strict';
 
 var combineCount = 0;
+var combineCache = {};
+var stable = require("stable");
 
 /**
  * 获取html页面中的<script ... src="path"></script> 资源
@@ -17,7 +19,7 @@ var combineCount = 0;
  * @param content
  */
 function analyzeHtml(content, pathMap) {
-    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>\r?\n|$)|<(link)\s+[\s\S]*?["'\s\w\/\-](?:>\r?\n|$)|<!--([\s\S]*?)(?:-->\r?\n|$)/ig;
+    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>\s?\r?\n|$)|<(link)\s+[\s\S]*?["'\s\w\/\-](?:>\s?\r?\n|$)|<!--([\s\S]*?)(?:-->\s?\r?\n|$)/ig;
     var match;
     var resources = {
         scripts: [],
@@ -143,6 +145,14 @@ function autoCombine(resList, ret, settings, conf, opt) {
     var toCombine = [];
     var fileExt;
 
+    function getCombineHash(list){
+        var idList = list.map(function(res){
+            return res.id;
+        });
+        var sorted = stable(idList).join(',');
+        return sorted;
+    }
+
     function flushCombine() {
         if (toCombine.length == 1) {
             //单独的文件不进行处理
@@ -151,43 +161,52 @@ function autoCombine(resList, ret, settings, conf, opt) {
             return;
         }
         if (toCombine.length !== 0) {
+            var hash = getCombineHash(toCombine);
             var content = '';
             var index = 0;
             var has = [];
-            toCombine.forEach(function (res) {
-                var file = ret.ids[res.id];
-                var c = file.getContent();
-                has.push(file.getId());
-                if (!fileExt) {
-                    fileExt = file.isJsLike ? 'js' : 'css';
-                }
-                if (c != '') {
-                    if (index++ > 0) {
-                        content += '\n';
-                        if (file.isJsLike) {
-                            content += ';';
-                        } else if (file.isCssLike) {
-                            c = c.replace(/@charset\s+(?:'[^']*'|"[^"]*"|\S*);?/gi, '');
-                        }
+            var id;
+            if (combineCache[hash]){
+                fis.log.debug('auto combine hit cache [' + hash + ']');
+                id = combineCache[hash];
+            }
+            else{
+                toCombine.forEach(function (res) {
+                    var file = ret.ids[res.id];
+                    var c = file.getContent();
+                    has.push(file.getId());
+                    if (!fileExt) {
+                        fileExt = file.isJsLike ? 'js' : 'css';
                     }
-                    content += c;
-                }
-            });
-            var subpath = 'pkg/auto_combine_${index}'.replace('${index}', combineCount) + '.' + fileExt;
-            var file = fis.file(fis.project.getProjectPath(), subpath);
-            ret.pkg[file.subpath] = file;
-            file.setContent(content);
-            var id = "auto_" + fileExt + "_" + combineCount;
-            ret.map.pkg[id] = {
-                uri: file.getUrl(opt.hash, opt.domain),
-                type: fileExt,
-                has: has
-            };
+                    if (c != '') {
+                        if (index++ > 0) {
+                            content += '\n';
+                            if (file.isJsLike) {
+                                content += ';';
+                            } else if (file.isCssLike) {
+                                c = c.replace(/@charset\s+(?:'[^']*'|"[^"]*"|\S*);?/gi, '');
+                            }
+                        }
+                        content += c;
+                    }
+                });
+                var subpath = 'pkg/auto_combine_${index}'.replace('${index}', combineCount) + '.' + fileExt;
+                var file = fis.file(fis.project.getProjectPath(), subpath);
+                ret.pkg[file.subpath] = file;
+                file.setContent(content);
+                id = "auto_" + fileExt + "_" + combineCount;
+                ret.map.pkg[id] = {
+                    uri: file.getUrl(opt.hash, opt.domain),
+                    type: fileExt,
+                    has: has
+                };
+                combineCache[hash] = id;
+                combineCount++;
+            }
             list.push({
                 type: 'pkg',
                 id: id
             });
-            combineCount++;
             toCombine = [];
         }
     }
