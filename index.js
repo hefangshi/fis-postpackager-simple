@@ -5,6 +5,8 @@
 
 'use strict';
 
+var combineCount = 0;
+
 /**
  * 获取html页面中的<script ... src="path"></script> 资源
  * 获取html页面中的<link ... rel="stylesheet" href="path" /> 资源
@@ -139,7 +141,6 @@ function getPkgResource(resources, ret, settings, conf, opt) {
 function autoCombine(resList, ret, settings, conf, opt) {
     var list = [];
     var toCombine = [];
-    var combineCount = 0;
     var fileExt;
 
     function flushCombine() {
