@@ -20,7 +20,7 @@ var stable = require("stable");
  */
 function analyzeHtml(content, pathMap) {
     var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>\s?\r?\n|$)|<(link)\s+[\s\S]*?["'\s\w\/\-](?:>\s?\r?\n|$)|<!--([\s\S]*?)(?:-->\s?\r?\n|$)/ig;
-    var match;
+    var match, single;
     var resources = {
         scripts: [],
         inlineScripts: [],
@@ -42,7 +42,7 @@ function analyzeHtml(content, pathMap) {
                     //不在资源表中的资源不处理
                     if (!pathMap[jsUrl])
                         return m;
-                    var single = false;
+                    single = false;
                     if (/(\sdata-single\s*=\s*)('true'|"true")/ig.test($1)) {
                         single = true;
                     }
@@ -68,10 +68,15 @@ function analyzeHtml(content, pathMap) {
                 var cssUrl = result[2] || result[3];
                 if (!pathMap[cssUrl])
                     return m;
+                single = false;
+                if (/(\sdata-single\s*=\s*)('true'|"true")/ig.test($3)) {
+                    single = true;
+                }
                 resources.styles.push({
                     content: m,
-                    id: pathMap[cssUrl]
-                })
+                    id: pathMap[cssUrl],
+                    single: single
+                });
             }
         } else if ($4) {
             //不处理注释
