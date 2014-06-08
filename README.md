@@ -49,7 +49,9 @@ fis.config.set('modules.postpackager', 'simple');
 
 ## 适应范围
 
-用于简单的Web前端项目自动打包减少页面请求连接数，同时可以通过[pack](https://github.com/fex-team/fis/wiki/%E9%85%8D%E7%BD%AEAPI#pack)设置来对公共资源进行独立打包
+用于简单的Web前端项目自动打包减少页面请求连接数，同时可以通过[pack](https://github.com/fex-team/fis/wiki/%E9%85%8D%E7%BD%AEAPI#pack)设置来对公共资源进行独立打包。
+
+要求使用的页面是完整的HTML页面，即包含head与body标签，支持通过html inline的形式添加的公用head与底栏等。但是不支持母板页形式的页面继承。
 
 ## DEMO
 
