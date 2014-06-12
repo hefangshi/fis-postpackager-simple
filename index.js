@@ -44,8 +44,8 @@ function analyzeHtml(content, pathMap) {
                 resources.inlineScripts.push({content: m });
             } else {
                 result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
-                if (result && (result[2] || result[3])) {
-                    var jsUrl = result[2] || result[3];
+                if (result && (result[1] || result[2])) {
+                    var jsUrl = result[1] || result[2];
                     //不在资源表中的资源不处理
                     if (!pathMap[jsUrl]){
                         return m;
@@ -77,8 +77,8 @@ function analyzeHtml(content, pathMap) {
                 return m;
             }
             result = m.match(/(?:\shref\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
-            if (result && (result[2] || result[3])) {
-                var cssUrl = result[2] || result[3];
+            if (result && (result[1] || result[2])) {
+                var cssUrl = result[1] || result[2];
                 if (!pathMap[cssUrl]){
                     return m;
                 }
@@ -295,7 +295,7 @@ function injectCss(cssList, content, ret) {
         } else {
             uri = ret.map.res[css.id].uri;
         }
-        styles += '<link type="text/css" rel="stylesheet" href="' + uri + '">\r\n';
+        styles += '<link type="text/css" rel="stylesheet" href="' + uri + '"/>\r\n';
     });
     return content.replace(/<\/head>/, styles + '\n$&');
 }
