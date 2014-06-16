@@ -41,11 +41,11 @@ fis.config.set('modules.postpackager', 'simple');
 
 #### fullPackHit.js
 
-默认为 `false`，使js资源尽量使用pack后的资源包，加强缓存能力。
+默认为 `false`
 
 #### fullPackHit.css
 
-默认为 `true`，仅当pack设置中某个包所有的样式资源均被页面依赖的情况下，才会加载资源包，这是为了避免引入了错误的样式内容导致网页显示异常。
+默认为 `false`
 
 ## 适应范围
 

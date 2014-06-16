@@ -11,8 +11,8 @@ var stable = require("stable");
 var defaultSetting = {
     autoCombine : true,
     fullPackHit : {
-        js : false, //js will use pack when one resource hit the pack
-        css : true //css will use pack only when full pack hit
+        js : false,
+        css : false
     }
 };
 /**
