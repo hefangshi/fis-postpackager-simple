@@ -26,7 +26,7 @@ var defaultSetting = {
  * @param pathMap
  */
 function analyzeHtml(content, pathMap) {
-    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>\s?\r?\n|$)|<(link)\s+[\s\S]*?["'\s\w\/\-](?:>\s?\r?\n|$)|<!--([\s\S]*?)(?:-->\s?\r?\n|$)/ig;
+    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)|<(link)\s+[\s\S]*?["'\s\w\/]>|<!--([\s\S]*?)-->/ig;
     var single, result;
     var resources = {
         scripts: [],

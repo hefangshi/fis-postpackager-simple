@@ -1,6 +1,6 @@
 {
   "name": "fis-postpackager-simple",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "a postpackager plugin for fis to auto replace pack resource and auto combine resources",
   "main": "index.js",
   "scripts": {
