@@ -149,7 +149,9 @@ function getPkgResource(resources, ret, fullPackHit) {
             var head = false;
             ret.map.pkg[res.pkg].has.forEach(function(inPkg){
                 handled[inPkg] = true;
-                head = head || (resourceMap[inPkg].head || false);
+                if (resourceMap[inPkg]){
+                    head = head || (resourceMap[inPkg].head || false);
+                }
             });
             pkgList[res.pkg] = true;
             list.push({
