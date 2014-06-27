@@ -40,8 +40,9 @@ function analyzeHtml(content, pathMap) {
             if (/(\sdata-fixed\s*=\s*)('true'|"true")/ig.test($1)) {
                 return m;
             }
+            var head = /(\sdata-position\s*=\s*)('head'|"head")/ig.test($1);
             if ($2) {
-                resources.inlineScripts.push({content: m });
+                resources.inlineScripts.push({content: m, head: head });
             } else {
                 result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
                 if (result && (result[1] || result[2])) {
@@ -50,14 +51,12 @@ function analyzeHtml(content, pathMap) {
                     if (!pathMap[jsUrl]){
                         return m;
                     }
-                    single = false;
-                    if (/(\sdata-single\s*=\s*)('true'|"true")/ig.test($1)) {
-                        single = true;
-                    }
+                    single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test($1);
                     resources.scripts.push({
                         content: m,
                         id: pathMap[jsUrl],
-                        single: single
+                        single: single,
+                        head: head
                     });
                 }
             }
@@ -82,10 +81,7 @@ function analyzeHtml(content, pathMap) {
                 if (!pathMap[cssUrl]){
                     return m;
                 }
-                single = false;
-                if (/(\sdata-single\s*=\s*)('true'|"true")/ig.test(m)) {
-                    single = true;
-                }
+                single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test(m);
                 resources.styles.push({
                     content: m,
                     id: pathMap[cssUrl],
@@ -126,6 +122,10 @@ function getPkgResource(resources, ret, fullPackHit) {
     var idList = resources.map(function(resource){
        return  resource.id;
     });
+    var resourceMap = {};
+    resources.forEach(function(resource){
+        resourceMap[resource.id] = resource;
+    });
 
     function fullPackPass(resource){
         if (!fullPackHit){
@@ -146,19 +146,23 @@ function getPkgResource(resources, ret, fullPackHit) {
         var res = ret.map.res[id];
         handled[id] = true;
         if (res.pkg && fullPackPass(resource)) {
+            var head = false;
             ret.map.pkg[res.pkg].has.forEach(function(inPkg){
                 handled[inPkg] = true;
+                head = head || (resourceMap[inPkg].head || false);
             });
             pkgList[res.pkg] = true;
             list.push({
                 type: 'pkg',
-                id: res.pkg
+                id: res.pkg,
+                head: head
             });
         } else {
             list.push({
                 type: 'res',
                 id: id,
-                single: resource.single
+                single: resource.single,
+                head: resource.head
             });
         }
     });
@@ -183,8 +187,7 @@ function autoCombine(resList, ret, conf, settings, opt) {
         var idList = list.map(function(res){
             return res.id;
         });
-        var sorted = stable(idList).join(',');
-        return sorted;
+        return stable(idList).join(',');
     }
 
     function flushCombine() {
@@ -273,7 +276,7 @@ function injectJs(jsList, content, ret) {
         }
     }
 
-    var script = '';
+    var scripts = '', headScripts = '';
     jsList.forEach(function (js) {
         var uri;
         if (js.type === 'pkg') {
@@ -281,9 +284,14 @@ function injectJs(jsList, content, ret) {
         } else {
             uri = ret.map.res[js.id].uri;
         }
-        script += '<script type="text/javascript" charset="' + getCharset() + '" src="' + uri + '"></script>\r\n';
+        var script = '<script type="text/javascript" charset="' + getCharset() + '" src="' + uri + '"></script>\r\n';
+        if (js.head){
+            headScripts += script;
+        }else{
+            scripts += script;
+        }
     });
-    return content.replace(/<\/body>/, script + '\n$&');
+    return content.replace(/<\/body>/, scripts + '\n$&').replace(/<\/head>/, headScripts + '\n$&');
 }
 
 function injectCss(cssList, content, ret) {
@@ -301,11 +309,15 @@ function injectCss(cssList, content, ret) {
 }
 
 function injectInlineJs(inlineScripts, content, ret) {
-    var inline = '';
+    var inlines = '', headInlines = '';
     inlineScripts.forEach(function (script) {
-        inline += script.content;
+        if (script.head){
+            headInlines += script.content;
+        }else{
+            inlines += script.content;
+        }
     });
-    return content.replace(/<\/body>/, inline + '\n$&');
+    return content.replace(/<\/body>/, inlines + '\n$&').replace(/<\/head>/, headInlines + '\n$&');
 }
 
 module.exports = function (ret, conf, settings, opt) { //打包后处理
