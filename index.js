@@ -28,9 +28,8 @@ var placeHolders = {};
  * @param content
  * @param pathMap
  * @param usePlaceholder
- * @param ignoreInlineScript
  */
-function analyzeHtml(content, pathMap, usePlaceholder, ignoreInlineScript) {
+function analyzeHtml(content, pathMap, usePlaceholder) {
     var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)|<(link)\s+[\s\S]*?["'\s\w\/]>|<!--([\s\S]*?)-->/ig;
     var single, result;
     var resources = {
@@ -49,13 +48,11 @@ function analyzeHtml(content, pathMap, usePlaceholder, ignoreInlineScript) {
             }
             var head = /(\sdata-position\s*=\s*)('head'|"head")/ig.test($1);
             if ($2) {
-                if (ignoreInlineScript){
+                if (usePlaceholder){
                     return m;
                 }
                 resources.inlineScripts.push({content: m, head: head });
-                placeHolderID = '<!--RESOURCE_INLINE_' + (resources.inlineScripts.length -1) + '_PLACEHOLDER-->';
-                placeHolders[placeHolderID] = m;
-                return usePlaceholder ? placeHolderID : "";
+                return "";
             } else {
                 result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
                 if (result && (result[1] || result[2])) {
@@ -442,17 +439,22 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
     settings = fis.util.merge(fis.util.clone(defaultSetting), settings);
     var pathMap = getResourcePathMap(ret, conf, settings, opt);
     ret.packMap = getPackMap(ret, conf, settings, opt);
+    //autoCombine模式下，autoReflow必为真
+    if(settings.autoCombine)
+        settings.autoReflow = true;
     fis.util.map(ret.src, function (subpath, file) {
         if (file.isHtmlLike && file.noMapJs !== false) { //类html文件
             placeHolders = {};
             var content = file.getContent();
-            var result = analyzeHtml(content, pathMap, !settings.autoCombine, !settings.autoCombine);
+            var result = analyzeHtml(content, pathMap, !settings.autoReflow);
             content = result.content;
             var jsList = getPkgResource(result.resources.scripts, ret, settings.fullPackHit.js);
             var cssList = getPkgResource(result.resources.styles, ret, settings.fullPackHit.css);
-            if (settings.autoCombine !== false) {
-                jsList = autoCombine(jsList, ret,  conf, settings, opt);
-                cssList = autoCombine(cssList, ret, conf, settings,  opt);
+            if (settings.autoCombine) {
+                jsList = autoCombine(jsList, ret, conf, settings, opt);
+                cssList = autoCombine(cssList, ret, conf, settings, opt);
+            }
+            if (settings.autoReflow){
                 content = injectJs(jsList, content, ret);
                 content = injectCss(cssList, content, ret);
                 content = injectInlineJs(result.resources.inlineScripts, content, ret);

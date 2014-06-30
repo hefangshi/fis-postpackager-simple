@@ -31,7 +31,9 @@
 //file : path/to/project/fis-conf.js
 fis.config.set('modules.postpackager', 'simple');
 //关闭autoCombine可以设置是否将零散资源进行打包
-//fis.config.set('settings.postpackager.simple.autoCombine', false);
+fis.config.set('settings.postpackager.simple.autoCombine', false);
+//开启autoReflow使得在关闭autoCombine的情况下，依然会优化脚本与样式资源引用位置
+fis.config.set('settings.postpackager.simple.autoReflow', true);
 ```
 
 ## 配置项
