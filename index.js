@@ -15,6 +15,9 @@ var defaultSetting = {
         css : false
     }
 };
+
+var placeHolders = {};
+
 /**
  * 获取html页面中的<script ... src="path"></script> 资源
  * 获取html页面中的<link ... rel="stylesheet" href="path" /> 资源
@@ -24,8 +27,10 @@ var defaultSetting = {
  * 需要去除注释内的引用
  * @param content
  * @param pathMap
+ * @param usePlaceholder
+ * @param ignoreInlineScript
  */
-function analyzeHtml(content, pathMap) {
+function analyzeHtml(content, pathMap, usePlaceholder, ignoreInlineScript) {
     var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)|<(link)\s+[\s\S]*?["'\s\w\/]>|<!--([\s\S]*?)-->/ig;
     var single, result;
     var resources = {
@@ -34,6 +39,8 @@ function analyzeHtml(content, pathMap) {
         styles: []
     };
     var replaced = content.replace(reg, function (m, $1, $2, $3, $4) {
+        var resourceID = null;
+        var placeHolderID = null;
         //$1为script标签, $2为内嵌脚本内容, $3为link标签, $4为注释内容
         if ($1) {
             //如果标签设置了data-fixed则不会收集此资源
@@ -42,19 +49,29 @@ function analyzeHtml(content, pathMap) {
             }
             var head = /(\sdata-position\s*=\s*)('head'|"head")/ig.test($1);
             if ($2) {
+                if (ignoreInlineScript){
+                    return m;
+                }
                 resources.inlineScripts.push({content: m, head: head });
+                placeHolderID = '<!--RESOURCE_INLINE_' + (resources.inlineScripts.length -1) + '_PLACEHOLDER-->';
+                placeHolders[placeHolderID] = m;
+                return usePlaceholder ? placeHolderID : "";
             } else {
                 result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
                 if (result && (result[1] || result[2])) {
                     var jsUrl = result[1] || result[2];
+                    if (jsUrl.indexOf("?") !== -1) {
+                        jsUrl = jsUrl.slice(0, jsUrl.indexOf("?"));
+                    }
                     //不在资源表中的资源不处理
                     if (!pathMap[jsUrl]){
                         return m;
                     }
                     single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test($1);
+                    resourceID = pathMap[jsUrl];
                     resources.scripts.push({
                         content: m,
-                        id: pathMap[jsUrl],
+                        id: resourceID,
                         single: single,
                         head: head
                     });
@@ -82,9 +99,10 @@ function analyzeHtml(content, pathMap) {
                     return m;
                 }
                 single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test(m);
+                resourceID = pathMap[cssUrl];
                 resources.styles.push({
                     content: m,
-                    id: pathMap[cssUrl],
+                    id: resourceID,
                     single: single
                 });
             }
@@ -92,7 +110,9 @@ function analyzeHtml(content, pathMap) {
             //不处理注释
             return m;
         }
-        return '';
+        placeHolderID = '<!--RESOURCE_' + resourceID + '_PLACEHOLDER-->';
+        placeHolders[resourceID] = placeHolderID;
+        return usePlaceholder ? placeHolderID : "";
     });
     return {
         resources: resources,
@@ -100,12 +120,40 @@ function analyzeHtml(content, pathMap) {
     };
 }
 
-function getResourcePathMap(ret) {
+function getResourcePathMap(ret, conf, settings, opt) {
     var map = {};
     fis.util.map(ret.map.res, function (subpath, file) {
         map[file.uri] = subpath;
     });
+    fis.util.map(ret.pkg, function (subpath, file) {
+        map[file.getUrl(opt.hash, opt.domain)] = file.getId();
+    });
     return map;
+}
+
+function getPackMap(ret, conf, settings, opt){
+    var uriToIdMap = {};
+    var fileToPack = {};
+    var packToFile = {};
+    fis.util.map(ret.map.pkg, function(id, pkg){
+        uriToIdMap[pkg.uri] = id;
+    });
+    fis.util.map(ret.pkg, function (subpath, file) {
+        var uri = file.getUrl(opt.hash, opt.domain);
+        var id = uriToIdMap[uri];
+        if (id){
+            //没有ID的PKG文件无需建立MAP
+            packToFile[id] = file;
+            fileToPack[file.getId()] = {
+                id: id,
+                pkg : ret.map.pkg[id]
+            }
+        }
+    });
+    return {
+        packToFile: packToFile,
+        fileToPack: fileToPack
+    }
 }
 
 /**
@@ -138,27 +186,40 @@ function getPkgResource(resources, ret, fullPackHit) {
         return unHit.length === 0;
     }
 
+    function addPkg(id, pkg, srcId){
+        if (pkgList[id])
+            return;
+        var head = false;
+        pkg.has.forEach(function(inPkg){
+            handled[inPkg] = true;
+            if (resourceMap[inPkg]){
+                head = head || (resourceMap[inPkg].head || false);
+            }
+        });
+        pkgList[id] = true;
+        list.push({
+            type: 'pkg',
+            id: id,
+            srcId: srcId,
+            head: head
+        });
+    }
+
     resources.forEach(function (resource) {
         var id = resource.id;
         if (handled[id]){
             return false;
         }
+        //当前资源是pack打包后的结果
+        if (ret.packMap.fileToPack[id]){
+            var pack = ret.packMap.fileToPack[id];
+            addPkg(pack.id, pack.pkg, id);
+            return true;
+        }
         var res = ret.map.res[id];
         handled[id] = true;
         if (res.pkg && fullPackPass(resource)) {
-            var head = false;
-            ret.map.pkg[res.pkg].has.forEach(function(inPkg){
-                handled[inPkg] = true;
-                if (resourceMap[inPkg]){
-                    head = head || (resourceMap[inPkg].head || false);
-                }
-            });
-            pkgList[res.pkg] = true;
-            list.push({
-                type: 'pkg',
-                id: res.pkg,
-                head: head
-            });
+            addPkg(res.pkg, ret.map.pkg[res.pkg], id);
         } else {
             list.push({
                 type: 'res',
@@ -267,26 +328,29 @@ function autoCombine(resList, ret, conf, settings, opt) {
     return list;
 }
 
-function injectJs(jsList, content, ret) {
-    function getCharset() {
-        var charset = fis.config.get('project.charset');
-        switch (charset) {
-            case 'utf8':
-                return 'utf-8';
-            default:
-                return charset;
-        }
-    }
 
+function getCharset(file) {
+    var charset = file? file.charset : fis.config.get('project.charset');
+    switch (charset) {
+        case 'utf8':
+            return 'utf-8';
+        default:
+            return charset;
+    }
+}
+
+function injectJs(jsList, content, ret) {
     var scripts = '', headScripts = '';
     jsList.forEach(function (js) {
-        var uri;
+        var uri, file;
         if (js.type === 'pkg') {
             uri = ret.map.pkg[js.id].uri;
+            file = ret.packMap.packToFile[js.id];
         } else {
             uri = ret.map.res[js.id].uri;
+            file = ret.src[js.id];
         }
-        var script = '<script type="text/javascript" charset="' + getCharset() + '" src="' + uri + '"></script>\r\n';
+        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>\r\n';
         if (js.head){
             headScripts += script;
         }else{
@@ -322,6 +386,53 @@ function injectInlineJs(inlineScripts, content, ret) {
     return content.replace(/<\/body>/, inlines + '\n$&').replace(/<\/head>/, headInlines + '\n$&');
 }
 
+function injectJsWithPlaceHolder(jsList, content, ret){
+    jsList.forEach(function (js) {
+        var uri, id, file;
+        if (js.type === 'pkg') {
+            uri = ret.map.pkg[js.id].uri;
+            file = ret.packMap.packToFile[js.id];
+            id = js.srcId;
+        } else {
+            uri = ret.map.res[js.id].uri;
+            file = ret.src[js.id];
+            id = js.id;
+        }
+        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>';
+        content = content.replace(placeHolders[id], script);
+        placeHolders[id] = false;
+    });
+    return content;
+}
+
+function injectCssWithPlaceHolder(cssList, content, ret){
+    cssList.forEach(function (css) {
+        var uri, id;
+        if (css.type === 'pkg') {
+            uri = ret.map.pkg[css.id].uri;
+            id = css.srcId;
+        } else {
+            uri = ret.map.res[css.id].uri;
+            id = css.id;
+        }
+        var style = '<link type="text/css" rel="stylesheet" href="' + uri + '"/>';
+        content = content.replace(placeHolders[id], style);
+        placeHolders[id] = false;
+    });
+    return content;
+}
+
+function cleanPlaceHolder(content){
+    fis.util.map(placeHolders, function(id, placeholder){
+        if (placeholder){
+            content = content.replace(placeholder, '');
+        }
+        placeHolders[id] = false;
+    });
+    return content;
+}
+
+
 module.exports = function (ret, conf, settings, opt) { //打包后处理
     if (!opt.pack){
         return;
@@ -329,20 +440,27 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
     combineCache = {};
     combineCount = 0;
     settings = fis.util.merge(fis.util.clone(defaultSetting), settings);
-    var pathMap = getResourcePathMap(ret);
+    var pathMap = getResourcePathMap(ret, conf, settings, opt);
+    ret.packMap = getPackMap(ret, conf, settings, opt);
     fis.util.map(ret.src, function (subpath, file) {
         if (file.isHtmlLike && file.noMapJs !== false) { //类html文件
+            placeHolders = {};
             var content = file.getContent();
-            var result = analyzeHtml(content, pathMap);
+            var result = analyzeHtml(content, pathMap, !settings.autoCombine, !settings.autoCombine);
+            content = result.content;
             var jsList = getPkgResource(result.resources.scripts, ret, settings.fullPackHit.js);
             var cssList = getPkgResource(result.resources.styles, ret, settings.fullPackHit.css);
             if (settings.autoCombine !== false) {
                 jsList = autoCombine(jsList, ret,  conf, settings, opt);
                 cssList = autoCombine(cssList, ret, conf, settings,  opt);
+                content = injectJs(jsList, content, ret);
+                content = injectCss(cssList, content, ret);
+                content = injectInlineJs(result.resources.inlineScripts, content, ret);
+            }else{
+                content = injectJsWithPlaceHolder(jsList, content, ret);
+                content = injectCssWithPlaceHolder(cssList, content, ret);
+//                content = cleanPlaceHolder(content);
             }
-            content = injectJs(jsList, result.content, ret);
-            content = injectCss(cssList, content, ret);
-            content = injectInlineJs(result.resources.inlineScripts, content, ret);
             file.setContent(content);
         }
     });
