@@ -459,7 +459,7 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
             }else{
                 content = injectJsWithPlaceHolder(jsList, content, ret);
                 content = injectCssWithPlaceHolder(cssList, content, ret);
-//                content = cleanPlaceHolder(content);
+                content = cleanPlaceHolder(content);
             }
             file.setContent(content);
         }

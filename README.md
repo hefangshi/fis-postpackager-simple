@@ -9,6 +9,8 @@
 
 ## 静态资源处理策略
 
+开启了autoCombine后，为了保证资源引用顺序的正确，插件会自动调整脚本的加载位置
+
  - ```<script src='path'></script>``` 引用的脚本默认会在打包后移动到body底部
  - ```<script data-position='head'></script>``` 引用或声明的脚本会移动到head底部
  - ```<script|link data-single='true'></script|link>``` 引用或声明的脚本和样式不会进行自动打包
@@ -17,6 +19,8 @@
  - ```<script>console.log('hello world')</script>``` 编写的内嵌脚本将会移动到body底部
  - ```<script|link data-fixed='true'>``` 声明的标签不会被处理
  - ```<style></style>``` 不会进行任何处理
+
+如果仅希望替换pack设置中的打包项，可以关闭autoCombine功能，这样所有打包资源都会在原脚本处加载
 
 ## 用法
 
