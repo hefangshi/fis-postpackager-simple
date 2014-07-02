@@ -39,7 +39,7 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
     };
     var replaced = content.replace(reg, function (m, $1, $2, $3, $4) {
         var resourceID = null;
-        var placeHolderID = null;
+        var result = null;
         //$1为script标签, $2为内嵌脚本内容, $3为link标签, $4为注释内容
         if ($1) {
             //如果标签设置了data-fixed则不会收集此资源
@@ -47,32 +47,30 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                 return m;
             }
             var head = /(\sdata-position\s*=\s*)('head'|"head")/ig.test($1);
-            if ($2) {
+            result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
+            if (!result || !(result[1] || result[2])) {
                 if (usePlaceholder){
                     return m;
                 }
                 resources.inlineScripts.push({content: m, head: head });
                 return "";
             } else {
-                result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
-                if (result && (result[1] || result[2])) {
-                    var jsUrl = result[1] || result[2];
-                    if (jsUrl.indexOf("?") !== -1) {
-                        jsUrl = jsUrl.slice(0, jsUrl.indexOf("?"));
-                    }
-                    //不在资源表中的资源不处理
-                    if (!pathMap[jsUrl]){
-                        return m;
-                    }
-                    single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test($1);
-                    resourceID = pathMap[jsUrl];
-                    resources.scripts.push({
-                        content: m,
-                        id: resourceID,
-                        single: single,
-                        head: head
-                    });
+                var jsUrl = result[1] || result[2];
+                if (jsUrl.indexOf("?") !== -1) {
+                    jsUrl = jsUrl.slice(0, jsUrl.indexOf("?"));
                 }
+                //不在资源表中的资源不处理
+                if (!pathMap[jsUrl]){
+                    return m;
+                }
+                single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test($1);
+                resourceID = pathMap[jsUrl];
+                resources.scripts.push({
+                    content: m,
+                    id: resourceID,
+                    single: single,
+                    head: head
+                });
             }
         } else if ($3) {
             var isCssLink = false;
@@ -107,7 +105,7 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
             //不处理注释
             return m;
         }
-        placeHolderID = '<!--RESOURCE_' + resourceID + '_PLACEHOLDER-->';
+        var placeHolderID = '<!--RESOURCE_' + resourceID + '_PLACEHOLDER-->';
         placeHolders[resourceID] = placeHolderID;
         return usePlaceholder ? placeHolderID : "";
     });
