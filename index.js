@@ -9,7 +9,8 @@ var combineCount = 0;
 var combineCache = {};
 var stable = require("stable");
 var defaultSetting = {
-    autoCombine : true,
+    autoCombine : false,
+    autoReflow : false,
     fullPackHit : {
         js : false,
         css : false

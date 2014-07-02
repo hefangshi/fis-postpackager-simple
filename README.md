@@ -7,7 +7,21 @@
  - 自动将页面中声明的资源引用替换为pack中设置的资源
  - 自动将未打包的零散资源按照引用顺序打包
 
-## 静态资源处理策略
+## 用法
+
+    $ npm install -g fis-postpackager-simple
+    $ vi path/to/project/fis-conf.js
+
+```javascript
+//file : path/to/project/fis-conf.js
+fis.config.set('modules.postpackager', 'simple');
+//开始autoCombine可以将零散资源进行自动打包
+fis.config.set('settings.postpackager.simple.autoCombine', true);
+//开启autoReflow使得在关闭autoCombine的情况下，依然会优化脚本与样式资源引用位置
+fis.config.set('settings.postpackager.simple.autoReflow', true);
+```
+
+## 自动打包处理策略
 
 开启了autoCombine后，为了保证资源引用顺序的正确，插件会自动调整脚本的加载位置
 
@@ -20,27 +34,15 @@
  - ```<script|link data-fixed='true'>``` 声明的标签不会被处理
  - ```<style></style>``` 不会进行任何处理
 
-如果仅希望替换pack设置中的打包项，可以关闭autoCombine功能，这样所有打包资源都会在原脚本处加载
-
-## 用法
-
-    $ npm install -g fis-postpackager-simple
-    $ vi path/to/project/fis-conf.js
-
-```javascript
-//file : path/to/project/fis-conf.js
-fis.config.set('modules.postpackager', 'simple');
-//关闭autoCombine可以设置是否将零散资源进行打包
-fis.config.set('settings.postpackager.simple.autoCombine', false);
-//开启autoReflow使得在关闭autoCombine的情况下，依然会优化脚本与样式资源引用位置
-fis.config.set('settings.postpackager.simple.autoReflow', true);
-```
-
 ## 配置项
 
 ### autoCombine
 
-设置是否自动将零散资源进行打包，默认为 `true`，关闭后仅会替换设置了pack的资源
+设置是否自动将零散资源进行打包，默认为 `false`
+
+### autoReflow
+
+设置是否自动优化脚本与样式资源引用位置，默认为 `false`
 
 ### fullPackHit
 
