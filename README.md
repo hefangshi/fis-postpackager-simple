@@ -10,7 +10,7 @@
 ## 用法
 
     $ npm install -g fis-postpackager-simple
-    $ vi path/to/project/fis-conf.js
+    $ vi path/to/project/fis-conf.js #编辑项目配置文件
 
 ```javascript
 //file : path/to/project/fis-conf.js
