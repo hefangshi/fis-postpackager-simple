@@ -19,6 +19,13 @@ var defaultSetting = {
 
 var placeHolders = {};
 
+function trimQuery(url){
+    if (url.indexOf("?") !== -1) {
+        url = url.slice(0, url.indexOf("?"));
+    }
+    return url;
+}
+
 /**
  * 获取html页面中的<script ... src="path"></script> 资源
  * 获取html页面中的<link ... rel="stylesheet" href="path" /> 资源
@@ -56,10 +63,7 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                 resources.inlineScripts.push({content: m, head: head });
                 return "";
             } else {
-                var jsUrl = result[1] || result[2];
-                if (jsUrl.indexOf("?") !== -1) {
-                    jsUrl = jsUrl.slice(0, jsUrl.indexOf("?"));
-                }
+                var jsUrl = trimQuery(result[1] || result[2]);
                 //不在资源表中的资源不处理
                 if (!pathMap[jsUrl]){
                     return m;
@@ -119,10 +123,10 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
 function getResourcePathMap(ret, conf, settings, opt) {
     var map = {};
     fis.util.map(ret.map.res, function (subpath, file) {
-        map[file.uri] = subpath;
+        map[trimQuery(file.uri)] = subpath;
     });
     fis.util.map(ret.pkg, function (subpath, file) {
-        map[file.getUrl(opt.hash, opt.domain)] = file.getId();
+        map[trimQuery(file.getUrl(opt.hash, opt.domain))] = file.getId();
     });
     return map;
 }
