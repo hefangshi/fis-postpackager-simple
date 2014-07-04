@@ -31,7 +31,7 @@ var placeHolders = {};
  * @param usePlaceholder
  */
 function analyzeHtml(content, pathMap, usePlaceholder) {
-    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)|<(link)\s+[\s\S]*?["'\s\w\/]>|<!--([\s\S]*?)-->/ig;
+    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)\s*|<(link)\s+[\s\S]*?["'\s\w\/]>\s*|<!--([\s\S]*?)-->\s*/ig;
     var single, result;
     var resources = {
         scripts: [],
@@ -346,14 +346,14 @@ function injectJs(jsList, content, ret) {
             uri = ret.map.res[js.id].uri;
             file = ret.src[js.id];
         }
-        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>\r\n';
+        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>\n';
         if (js.head){
             headScripts += script;
         }else{
             scripts += script;
         }
     });
-    return content.replace(/<\/body>/, scripts + '\n$&').replace(/<\/head>/, headScripts + '\n$&');
+    return content.replace(/<\/body>/, scripts + '$&').replace(/<\/head>/, headScripts + '$&');
 }
 
 function injectCss(cssList, content, ret) {
@@ -365,9 +365,9 @@ function injectCss(cssList, content, ret) {
         } else {
             uri = ret.map.res[css.id].uri;
         }
-        styles += '<link type="text/css" rel="stylesheet" href="' + uri + '"/>\r\n';
+        styles += '<link type="text/css" rel="stylesheet" href="' + uri + '"/>\n';
     });
-    return content.replace(/<\/head>/, styles + '\n$&');
+    return content.replace(/<\/head>/, styles + '$&');
 }
 
 function injectInlineJs(inlineScripts, content, ret) {
@@ -379,7 +379,7 @@ function injectInlineJs(inlineScripts, content, ret) {
             inlines += script.content;
         }
     });
-    return content.replace(/<\/body>/, inlines + '\n$&').replace(/<\/head>/, headInlines + '\n$&');
+    return content.replace(/<\/body>/, inlines + '$&').replace(/<\/head>/, headInlines + '$&');
 }
 
 function injectJsWithPlaceHolder(jsList, content, ret){
@@ -394,7 +394,7 @@ function injectJsWithPlaceHolder(jsList, content, ret){
             file = ret.src[js.id];
             id = js.id;
         }
-        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>';
+        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>\n';
         content = content.replace(placeHolders[id], script);
         placeHolders[id] = false;
     });
@@ -411,7 +411,7 @@ function injectCssWithPlaceHolder(cssList, content, ret){
             uri = ret.map.res[css.id].uri;
             id = css.id;
         }
-        var style = '<link type="text/css" rel="stylesheet" href="' + uri + '"/>';
+        var style = '<link type="text/css" rel="stylesheet" href="' + uri + '"/>\n';
         content = content.replace(placeHolders[id], style);
         placeHolders[id] = false;
     });
