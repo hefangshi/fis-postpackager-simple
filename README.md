@@ -14,6 +14,7 @@
 
 ```javascript
 //file : path/to/project/fis-conf.js
+//使用simple插件，自动应用pack的资源引用
 fis.config.set('modules.postpackager', 'simple');
 //开始autoCombine可以将零散资源进行自动打包
 fis.config.set('settings.postpackager.simple.autoCombine', true);
