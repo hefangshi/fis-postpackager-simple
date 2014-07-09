@@ -10,10 +10,11 @@
 ## 用法
 
     $ npm install -g fis-postpackager-simple
-    $ vi path/to/project/fis-conf.js
+    $ vi path/to/project/fis-conf.js #编辑项目配置文件
 
 ```javascript
 //file : path/to/project/fis-conf.js
+//使用simple插件，自动应用pack的资源引用
 fis.config.set('modules.postpackager', 'simple');
 //开始autoCombine可以将零散资源进行自动打包
 fis.config.set('settings.postpackager.simple.autoCombine', true);
@@ -59,8 +60,6 @@ fis.config.set('settings.postpackager.simple.autoReflow', true);
 ## 适应范围
 
 用于简单的Web前端项目自动打包减少页面请求连接数，同时可以通过[pack](https://github.com/fex-team/fis/wiki/%E9%85%8D%E7%BD%AEAPI#pack)设置来对公共资源进行独立打包。
-
-要求使用的页面是完整的HTML页面，即包含head与body标签，支持通过html inline的形式添加的公用head与底栏等。但是不支持母板页形式的页面继承。
 
 ## DEMO
 
