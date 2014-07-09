@@ -94,7 +94,7 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
             }
             result = m.match(/(?:\shref\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
             if (result && (result[1] || result[2])) {
-                var cssUrl = result[1] || result[2];
+                var cssUrl = trimQuery(result[1] || result[2]);
                 if (!pathMap[cssUrl]){
                     return m;
                 }
