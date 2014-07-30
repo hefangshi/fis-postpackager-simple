@@ -467,6 +467,9 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
                 content = cleanPlaceHolder(content);
             }
             file.setContent(content);
+            if (file.useCache){
+                ret.pkg[file.subpath] = file;
+            }
         }
     });
 };
