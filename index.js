@@ -369,7 +369,7 @@ function injectCss(cssList, content, ret) {
         } else {
             uri = ret.map.res[css.id].uri;
         }
-        styles += '<link type="text/css" rel="stylesheet" href="' + uri + '"/>\n';
+        styles += '<link type="text/css" rel="stylesheet" href="' + uri + '">\n';
     });
     return content.replace(/<\/head>/, styles + '$&');
 }
@@ -415,7 +415,7 @@ function injectCssWithPlaceHolder(cssList, content, ret){
             uri = ret.map.res[css.id].uri;
             id = css.id;
         }
-        var style = '<link type="text/css" rel="stylesheet" href="' + uri + '"/>\n';
+        var style = '<link type="text/css" rel="stylesheet" href="' + uri + '">\n';
         content = content.replace(placeHolders[id], style);
         placeHolders[id] = false;
     });
