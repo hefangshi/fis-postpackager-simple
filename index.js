@@ -14,7 +14,9 @@ var defaultSetting = {
     fullPackHit : {
         js : false,
         css : false
-    }
+    },
+    headTag: "</head>",
+    bodyTag: "</body>",
 };
 
 var placeHolders = {};
@@ -24,6 +26,16 @@ function trimQuery(url){
         url = url.slice(0, url.indexOf("?"));
     }
     return url;
+}
+
+
+function wrapTag(reg){
+    if(typeof reg === 'string'){
+        return new RegExp(fis.util.escapeReg(reg));
+    } else if(!fis.util.is(reg, 'RegExp')){
+        fis.log.error('invalid regexp [' + reg + ']');
+    }
+    return reg;
 }
 
 /**
@@ -147,13 +159,13 @@ function getPackMap(ret, conf, settings, opt){
             fileToPack[file.getId()] = {
                 id: id,
                 pkg : ret.map.pkg[id]
-            }
+            };
         }
     });
     return {
         packToFile: packToFile,
         fileToPack: fileToPack
-    }
+    };
 }
 
 /**
@@ -339,7 +351,7 @@ function getCharset(file) {
     }
 }
 
-function injectJs(jsList, content, ret) {
+function injectJs(jsList, content, ret, settings) {
     var scripts = '', headScripts = '';
     jsList.forEach(function (js) {
         var uri, file;
@@ -357,10 +369,12 @@ function injectJs(jsList, content, ret) {
             scripts += script;
         }
     });
-    return content.replace(/<\/body>/, scripts + '$&').replace(/<\/head>/, headScripts + '$&');
+    content = modBodyContent(content, scripts, settings);
+    content = modHeadContent(content, headScripts, settings);
+    return content;
 }
 
-function injectCss(cssList, content, ret) {
+function injectCss(cssList, content, ret, settings) {
     var styles = '';
     cssList.forEach(function (css) {
         var uri;
@@ -371,10 +385,11 @@ function injectCss(cssList, content, ret) {
         }
         styles += '<link type="text/css" rel="stylesheet" href="' + uri + '">\n';
     });
-    return content.replace(/<\/head>/, styles + '$&');
+    content = modHeadContent(content, styles, settings);
+    return content;
 }
 
-function injectInlineJs(inlineScripts, content, ret) {
+function injectInlineJs(inlineScripts, content, ret, settings) {
     var inlines = '', headInlines = '';
     inlineScripts.forEach(function (script) {
         if (script.head){
@@ -383,7 +398,27 @@ function injectInlineJs(inlineScripts, content, ret) {
             inlines += script.content;
         }
     });
-    return content.replace(/<\/body>/, inlines + '$&').replace(/<\/head>/, headInlines + '$&');
+    content = modBodyContent(content, inlines, settings);
+    content = modHeadContent(content, headInlines, settings);
+    return content;
+}
+
+function modHeadContent(content, mod, settings){
+    if (settings.headTag.test(content)){
+        content = content.replace(settings.headTag, mod + '$&');
+    }else if (settings.forceOutput){
+        content = mod + content;
+    }
+    return content;
+}
+
+function modBodyContent(content, mod, settings){
+    if (settings.bodyTag.test(content)){
+        content = content.replace(settings.bodyTag, mod + '$&');
+    }else if (settings.forceOutput){
+        content += mod;
+    }
+    return content;
 }
 
 function injectJsWithPlaceHolder(jsList, content, ret){
@@ -440,6 +475,8 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
     combineCache = {};
     combineCount = 0;
     settings = fis.util.merge(fis.util.clone(defaultSetting), settings);
+    settings.headTag = wrapTag(settings.headTag);
+    settings.bodyTag= wrapTag(settings.bodyTag);
     var pathMap = getResourcePathMap(ret, conf, settings, opt);
     ret.packMap = getPackMap(ret, conf, settings, opt);
     //autoCombine模式下，autoReflow必为真
@@ -458,9 +495,9 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
                 cssList = autoCombine(cssList, ret, conf, settings, opt);
             }
             if (settings.autoReflow){
-                content = injectJs(jsList, content, ret);
-                content = injectCss(cssList, content, ret);
-                content = injectInlineJs(result.resources.inlineScripts, content, ret);
+                content = injectJs(jsList, content, ret, settings);
+                content = injectCss(cssList, content, ret, settings);
+                content = injectInlineJs(result.resources.inlineScripts, content, ret, settings);
             }else{
                 content = injectJsWithPlaceHolder(jsList, content, ret);
                 content = injectCssWithPlaceHolder(cssList, content, ret);

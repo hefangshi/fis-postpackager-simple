@@ -57,6 +57,24 @@ fis.config.set('settings.postpackager.simple.autoReflow', true);
 
 默认为 `false`
 
+### forceOutput
+
+autoCombine或autoReflow时是否对不包含head和body的页面强制输出合并脚本
+
+### headTag
+
+autoCombine或autoReflow时自定义 `</head>` 标记设置，如 `<!--HEAD_END-->`。
+
+**注意** 替换完成后，headTag最终将不会被删除
+
+
+### bodyTag
+
+autoCombine或autoReflow时自定义 `</body>` 标记设置，如 `<!--BODY_END-->`。
+
+**注意** 替换完成后，bodyTag最终将不会被删除
+
+
 ## 适应范围
 
 用于简单的Web前端项目自动打包减少页面请求连接数，同时可以通过[pack](https://github.com/fex-team/fis/wiki/%E9%85%8D%E7%BD%AEAPI#pack)设置来对公共资源进行独立打包。
