@@ -17,6 +17,7 @@ var defaultSetting = {
     },
     headTag: "</head>",
     bodyTag: "</body>",
+    output: 'pkg/auto_combine_${hash}'
 };
 
 var placeHolders = {};
@@ -302,7 +303,10 @@ function autoCombine(resList, ret, conf, settings, opt) {
                         content += c;
                     }
                 });
-                var subpath = 'pkg/auto_combine_${index}'.replace('${index}', combineCount) + '.' + fileExt;
+
+                var subpath = settings.output.replace('${index}', combineCount)
+                                    .replace('${hash}', fis.util.md5(stable(has).join(','), 5))
+                                 + '.' + fileExt;
                 var file = fis.file(fis.project.getProjectPath(), subpath);
                 ret.pkg[file.subpath] = file;
                 file.setContent(content);

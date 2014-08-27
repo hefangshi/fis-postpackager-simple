@@ -74,6 +74,10 @@ autoCombine或autoReflow时自定义 `</body>` 标记设置，如 `<!--BODY_END-
 
 **注意** 替换完成后，bodyTag最终将不会被删除
 
+### output
+
+合成文件输出路径，默认值 "pkg/auto_combine_${hash}" ${hash}为合成内容hash值 ${index}为合成文件序列
+
 
 ## 适应范围
 
