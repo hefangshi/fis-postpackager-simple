@@ -303,9 +303,10 @@ function autoCombine(resList, ret, conf, settings, opt) {
                         content += c;
                     }
                 });
-                var contentHash = fis.util.md5(content, 5);
+
                 var subpath = settings.output.replace('${index}', combineCount)
-                                    .replace('${hash}', contentHash) + '.' + fileExt;
+                                    .replace('${hash}', fis.util.md5(stable(has).join(','), 5))
+                                 + '.' + fileExt;
                 var file = fis.file(fis.project.getProjectPath(), subpath);
                 ret.pkg[file.subpath] = file;
                 file.setContent(content);
