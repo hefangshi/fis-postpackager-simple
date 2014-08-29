@@ -27,7 +27,7 @@ fis.config.set('settings.postpackager.simple.autoReflow', true);
 开启了autoCombine后，为了保证资源引用顺序的正确，插件会自动调整脚本的加载位置
 
  - ```<script src='path'></script>``` 引用的脚本默认会在打包后移动到body底部
- - ```<script data-position='head'></script>``` 引用或声明的脚本会移动到head底部
+ - ```<script data-position='head'></script>``` 引用或声明的脚本会移动到head底部 **仅限pack打包，自动打包不适用**
  - ```<script|link data-single='true'></script|link>``` 引用或声明的脚本和样式不会进行自动打包
  - ```<link rel='stylesheet' href='path'>``` 引用的样式表默认会在打包后移动到head底部
  - ```<link rel='stylesheet' href='path'>``` 引用的样式表默认会在打包后移动到head底部
