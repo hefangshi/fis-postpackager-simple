@@ -30,7 +30,6 @@ fis.config.set('settings.postpackager.simple.autoReflow', true);
  - ```<script data-position='head'></script>``` 引用或声明的脚本会移动到head底部 **仅限pack打包，自动打包不适用**
  - ```<script|link data-single='true'></script|link>``` 引用或声明的脚本和样式不会进行自动打包
  - ```<link rel='stylesheet' href='path'>``` 引用的样式表默认会在打包后移动到head底部
- - ```<link rel='stylesheet' href='path'>``` 引用的样式表默认会在打包后移动到head底部
  - ```<script>console.log('hello world')</script>``` 编写的内嵌脚本将会移动到body底部
  - ```<script|link data-fixed='true'>``` 声明的标签不会被处理
  - ```<style></style>``` 不会进行任何处理
