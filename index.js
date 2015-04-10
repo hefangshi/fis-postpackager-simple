@@ -63,6 +63,10 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
         var result = null;
         //$1为script标签, $2为内嵌脚本内容, $3为link标签, $4为注释内容
         if ($1) {
+            var type = $1.match(/type=(".*?"|'.*?')/i);
+            type = type && type[1];
+
+            var noJs = type && type.indexOf('javascript') == -1;
             //如果标签设置了data-fixed则不会收集此资源
             if (/(\sdata-fixed\s*=\s*)('true'|"true")/ig.test($1)) {
                 return m;
