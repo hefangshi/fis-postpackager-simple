@@ -1,3 +1,5 @@
+/* global fis */
+
 /*
  * fis
  * http://fis.baidu.com/
@@ -9,11 +11,11 @@ var combineCount = 0;
 var combineCache = {};
 var stable = require("stable");
 var defaultSetting = {
-    autoCombine : false,
-    autoReflow : false,
-    fullPackHit : {
-        js : false,
-        css : false
+    autoCombine: false,
+    autoReflow: false,
+    fullPackHit: {
+        js: false,
+        css: false
     },
     headTag: "</head>",
     bodyTag: "</body>",
@@ -22,7 +24,7 @@ var defaultSetting = {
 
 var placeHolders = {};
 
-function trimQuery(url){
+function trimQuery(url) {
     if (url.indexOf("?") !== -1) {
         url = url.slice(0, url.indexOf("?"));
     }
@@ -30,10 +32,10 @@ function trimQuery(url){
 }
 
 
-function wrapTag(reg){
-    if(typeof reg === 'string'){
+function wrapTag(reg) {
+    if (typeof reg === 'string') {
         return new RegExp(fis.util.escapeReg(reg));
-    } else if(!fis.util.is(reg, 'RegExp')){
+    } else if (!fis.util.is(reg, 'RegExp')) {
         fis.log.error('invalid regexp [' + reg + ']');
     }
     return reg;
@@ -51,7 +53,8 @@ function wrapTag(reg){
  * @param usePlaceholder
  */
 function analyzeHtml(content, pathMap, usePlaceholder) {
-    var reg = /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)\s*|<(link)\s+[\s\S]*?["'\s\w\/]>\s*|<!--([\s\S]*?)-->\s*/ig;
+    var reg =
+        /(<script(?:(?=\s)[\s\S]*?["'\s\w\/\-]>|>))([\s\S]*?)(?:<\/script\s*>)\s*|<(link)\s+[\s\S]*?["'\s\w\/]>\s*|<!--([\s\S]*?)-->\s*/ig;
     var single, result;
     var resources = {
         scripts: [],
@@ -70,15 +73,24 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
             var head = /(\sdata-position\s*=\s*)('head'|"head")/ig.test($1);
             result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
             if (!result || !(result[1] || result[2])) {
-                if (usePlaceholder){
+                if (usePlaceholder) {
                     return m;
                 }
-                resources.inlineScripts.push({content: m, head: head });
+                // only process <script type="**/javascript"> when type attr is exist
+                var type = m.match(/type=(".*?"|'.*?')/i);
+                type = type && type[1];
+                if (type && type.indexOf('javascript') == -1) {
+                    return m;
+                }
+                resources.inlineScripts.push({
+                    content: m,
+                    head: head
+                });
                 return "";
             } else {
                 var jsUrl = trimQuery(result[1] || result[2]);
                 //不在资源表中的资源不处理
-                if (!pathMap[jsUrl]){
+                if (!pathMap[jsUrl]) {
                     return m;
                 }
                 single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test($1);
@@ -98,7 +110,7 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                 isCssLink = rel === 'stylesheet';
             }
             //对rel不是stylesheet的link不处理
-            if (!isCssLink){
+            if (!isCssLink) {
                 return m;
             }
             //如果标签设置了data-fixed则不会收集此资源
@@ -108,7 +120,7 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
             result = m.match(/(?:\shref\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
             if (result && (result[1] || result[2])) {
                 var cssUrl = trimQuery(result[1] || result[2]);
-                if (!pathMap[cssUrl]){
+                if (!pathMap[cssUrl]) {
                     return m;
                 }
                 single = /(\sdata-single\s*=\s*)('true'|"true")/ig.test(m);
@@ -144,22 +156,22 @@ function getResourcePathMap(ret, conf, settings, opt) {
     return map;
 }
 
-function getPackMap(ret, conf, settings, opt){
+function getPackMap(ret, conf, settings, opt) {
     var uriToIdMap = {};
     var fileToPack = {};
     var packToFile = {};
-    fis.util.map(ret.map.pkg, function(id, pkg){
+    fis.util.map(ret.map.pkg, function (id, pkg) {
         uriToIdMap[pkg.uri] = id;
     });
     fis.util.map(ret.pkg, function (subpath, file) {
         var uri = file.getUrl(opt.hash, opt.domain);
         var id = uriToIdMap[uri];
-        if (id){
+        if (id) {
             //没有ID的PKG文件无需建立MAP
             packToFile[id] = file;
             fileToPack[file.getId()] = {
                 id: id,
-                pkg : ret.map.pkg[id]
+                pkg: ret.map.pkg[id]
             };
         }
     });
@@ -180,16 +192,16 @@ function getPkgResource(resources, ret, fullPackHit) {
     var pkgList = {};
     var list = [];
     var handled = {};
-    var idList = resources.map(function(resource){
-       return  resource.id;
+    var idList = resources.map(function (resource) {
+        return resource.id;
     });
     var resourceMap = {};
-    resources.forEach(function(resource){
+    resources.forEach(function (resource) {
         resourceMap[resource.id] = resource;
     });
 
-    function fullPackPass(resource){
-        if (!fullPackHit){
+    function fullPackPass(resource) {
+        if (!fullPackHit) {
             return true;
         }
         var pkg = ret.map.pkg[ret.map.res[resource.id].pkg];
@@ -199,13 +211,13 @@ function getPkgResource(resources, ret, fullPackHit) {
         return unHit.length === 0;
     }
 
-    function addPkg(id, pkg, srcId){
+    function addPkg(id, pkg, srcId) {
         if (pkgList[id])
             return;
         var head = false;
-        pkg.has.forEach(function(inPkg){
+        pkg.has.forEach(function (inPkg) {
             handled[inPkg] = true;
-            if (resourceMap[inPkg]){
+            if (resourceMap[inPkg]) {
                 head = head || (resourceMap[inPkg].head || false);
             }
         });
@@ -220,11 +232,11 @@ function getPkgResource(resources, ret, fullPackHit) {
 
     resources.forEach(function (resource) {
         var id = resource.id;
-        if (handled[id]){
+        if (handled[id]) {
             return false;
         }
         //当前资源是pack打包后的结果
-        if (ret.packMap.fileToPack[id]){
+        if (ret.packMap.fileToPack[id]) {
             var pack = ret.packMap.fileToPack[id];
             addPkg(pack.id, pack.pkg, id);
             return true;
@@ -259,8 +271,8 @@ function autoCombine(resList, ret, conf, settings, opt) {
     var toCombine = [];
     var fileExt;
 
-    function getCombineHash(list){
-        var idList = list.map(function(res){
+    function getCombineHash(list) {
+        var idList = list.map(function (res) {
             return res.id;
         });
         return stable(idList).join(',');
@@ -279,11 +291,10 @@ function autoCombine(resList, ret, conf, settings, opt) {
             var index = 0;
             var has = [];
             var id;
-            if (combineCache[hash]){
+            if (combineCache[hash]) {
                 fis.log.debug('auto combine hit cache [' + hash + ']');
                 id = combineCache[hash];
-            }
-            else{
+            } else {
                 toCombine.forEach(function (res) {
                     var file = ret.ids[res.id];
                     var c = file.getContent();
@@ -305,8 +316,7 @@ function autoCombine(resList, ret, conf, settings, opt) {
                 });
 
                 var subpath = settings.output.replace('${index}', combineCount)
-                                    .replace('${hash}', fis.util.md5(stable(has).join(','), 5))
-                                 + '.' + fileExt;
+                    .replace('${hash}', fis.util.md5(stable(has).join(','), 5)) + '.' + fileExt;
                 var file = fis.file(fis.project.getProjectPath(), subpath);
                 ret.pkg[file.subpath] = file;
                 file.setContent(content);
@@ -346,17 +356,18 @@ function autoCombine(resList, ret, conf, settings, opt) {
 
 
 function getCharset(file) {
-    var charset = file? file.charset : fis.config.get('project.charset');
+    var charset = file ? file.charset : fis.config.get('project.charset');
     switch (charset) {
-        case 'utf8':
-            return 'utf-8';
-        default:
-            return charset;
+    case 'utf8':
+        return 'utf-8';
+    default:
+        return charset;
     }
 }
 
 function injectJs(jsList, content, ret, settings) {
-    var scripts = '', headScripts = '';
+    var scripts = '',
+        headScripts = '';
     jsList.forEach(function (js) {
         var uri, file;
         if (js.type === 'pkg') {
@@ -366,10 +377,11 @@ function injectJs(jsList, content, ret, settings) {
             uri = ret.map.res[js.id].uri;
             file = ret.src[js.id];
         }
-        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>\n';
-        if (js.head){
+        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri +
+            '"></script>\n';
+        if (js.head) {
             headScripts += script;
-        }else{
+        } else {
             scripts += script;
         }
     });
@@ -394,11 +406,12 @@ function injectCss(cssList, content, ret, settings) {
 }
 
 function injectInlineJs(inlineScripts, content, ret, settings) {
-    var inlines = '', headInlines = '';
+    var inlines = '',
+        headInlines = '';
     inlineScripts.forEach(function (script) {
-        if (script.head){
+        if (script.head) {
             headInlines += script.content;
-        }else{
+        } else {
             inlines += script.content;
         }
     });
@@ -407,25 +420,25 @@ function injectInlineJs(inlineScripts, content, ret, settings) {
     return content;
 }
 
-function modHeadContent(content, mod, settings){
-    if (settings.headTag.test(content)){
+function modHeadContent(content, mod, settings) {
+    if (settings.headTag.test(content)) {
         content = content.replace(settings.headTag, mod + '$&');
-    }else if (settings.forceOutput){
+    } else if (settings.forceOutput) {
         content = mod + content;
     }
     return content;
 }
 
-function modBodyContent(content, mod, settings){
-    if (settings.bodyTag.test(content)){
+function modBodyContent(content, mod, settings) {
+    if (settings.bodyTag.test(content)) {
         content = content.replace(settings.bodyTag, mod + '$&');
-    }else if (settings.forceOutput){
+    } else if (settings.forceOutput) {
         content += mod;
     }
     return content;
 }
 
-function injectJsWithPlaceHolder(jsList, content, ret){
+function injectJsWithPlaceHolder(jsList, content, ret) {
     jsList.forEach(function (js) {
         var uri, id, file;
         if (js.type === 'pkg') {
@@ -437,14 +450,15 @@ function injectJsWithPlaceHolder(jsList, content, ret){
             file = ret.src[js.id];
             id = js.id;
         }
-        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri + '"></script>\n';
+        var script = '<script type="text/javascript" charset="' + getCharset(file) + '" src="' + uri +
+            '"></script>\n';
         content = content.replace(placeHolders[id], script);
         placeHolders[id] = false;
     });
     return content;
 }
 
-function injectCssWithPlaceHolder(cssList, content, ret){
+function injectCssWithPlaceHolder(cssList, content, ret) {
     cssList.forEach(function (css) {
         var uri, id;
         if (css.type === 'pkg') {
@@ -461,9 +475,9 @@ function injectCssWithPlaceHolder(cssList, content, ret){
     return content;
 }
 
-function cleanPlaceHolder(content){
-    fis.util.map(placeHolders, function(id, placeholder){
-        if (placeholder){
+function cleanPlaceHolder(content) {
+    fis.util.map(placeHolders, function (id, placeholder) {
+        if (placeholder) {
             content = content.replace(placeholder, '');
         }
         placeHolders[id] = false;
@@ -473,18 +487,18 @@ function cleanPlaceHolder(content){
 
 
 module.exports = function (ret, conf, settings, opt) { //打包后处理
-    if (!opt.pack){
+    if (!opt.pack) {
         return;
     }
     combineCache = {};
     combineCount = 0;
     settings = fis.util.merge(fis.util.clone(defaultSetting), settings);
     settings.headTag = wrapTag(settings.headTag);
-    settings.bodyTag= wrapTag(settings.bodyTag);
+    settings.bodyTag = wrapTag(settings.bodyTag);
     var pathMap = getResourcePathMap(ret, conf, settings, opt);
     ret.packMap = getPackMap(ret, conf, settings, opt);
     //autoCombine模式下，autoReflow必为真
-    if(settings.autoCombine)
+    if (settings.autoCombine)
         settings.autoReflow = true;
     fis.util.map(ret.src, function (subpath, file) {
         if (file.isHtmlLike && file.noMapJs !== false) { //类html文件
@@ -498,17 +512,17 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
                 jsList = autoCombine(jsList, ret, conf, settings, opt);
                 cssList = autoCombine(cssList, ret, conf, settings, opt);
             }
-            if (settings.autoReflow){
+            if (settings.autoReflow) {
                 content = injectJs(jsList, content, ret, settings);
                 content = injectCss(cssList, content, ret, settings);
                 content = injectInlineJs(result.resources.inlineScripts, content, ret, settings);
-            }else{
+            } else {
                 content = injectJsWithPlaceHolder(jsList, content, ret);
                 content = injectCssWithPlaceHolder(cssList, content, ret);
                 content = cleanPlaceHolder(content);
             }
             file.setContent(content);
-            if (file.useCache){
+            if (file.useCache) {
                 ret.pkg[file.subpath] = file;
             }
         }
