@@ -71,13 +71,13 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                 return m;
             }
             var head = /(\sdata-position\s*=\s*)('head'|"head")/ig.test($1);
-            result = m.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
+            result = $1.match(/(?:\ssrc\s*=\s*)(?:'([^']+)'|"([^"]+)"|[^\s\/>]+)/i);
             if (!result || !(result[1] || result[2])) {
                 if (usePlaceholder) {
                     return m;
                 }
                 // only process <script type="**/javascript"> when type attr is exist
-                var type = m.match(/type=(".*?"|'.*?')/i);
+                var type = $1.match(/type=(".*?"|'.*?')/i);
                 type = type && type[1];
                 if (type && type.indexOf('javascript') == -1) {
                     return m;
