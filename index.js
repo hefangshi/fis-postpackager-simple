@@ -35,7 +35,8 @@ function trimQuery(url) {
 function wrapTag(reg) {
     if (typeof reg === 'string') {
         return new RegExp(fis.util.escapeReg(reg));
-    } else if (!fis.util.is(reg, 'RegExp')) {
+    }
+    else if (!fis.util.is(reg, 'RegExp')) {
         fis.log.error('invalid regexp [' + reg + ']');
     }
     return reg;
@@ -87,7 +88,8 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                     head: head
                 });
                 return "";
-            } else {
+            }
+            else {
                 var jsUrl = trimQuery(result[1] || result[2]);
                 //不在资源表中的资源不处理
                 if (!pathMap[jsUrl]) {
@@ -102,7 +104,8 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                     head: head
                 });
             }
-        } else if ($3) {
+        }
+        else if ($3) {
             var isCssLink = false;
             result = m.match(/\srel\s*=\s*('[^']+'|"[^"]+"|[^\s\/>]+)/i);
             if (result && result[1]) {
@@ -131,7 +134,8 @@ function analyzeHtml(content, pathMap, usePlaceholder) {
                     single: single
                 });
             }
-        } else if ($4) {
+        }
+        else if ($4) {
             //不处理注释
             return m;
         }
@@ -245,7 +249,8 @@ function getPkgResource(resources, ret, fullPackHit) {
         handled[id] = true;
         if (res.pkg && fullPackPass(resource)) {
             addPkg(res.pkg, ret.map.pkg[res.pkg], id);
-        } else {
+        }
+        else {
             list.push({
                 type: 'res',
                 id: id,
@@ -294,7 +299,8 @@ function autoCombine(resList, ret, conf, settings, opt) {
             if (combineCache[hash]) {
                 fis.log.debug('auto combine hit cache [' + hash + ']');
                 id = combineCache[hash];
-            } else {
+            }
+            else {
                 toCombine.forEach(function (res) {
                     var file = ret.ids[res.id];
                     var c = file.getContent();
@@ -307,7 +313,8 @@ function autoCombine(resList, ret, conf, settings, opt) {
                             content += '\n';
                             if (file.isJsLike) {
                                 content += ';';
-                            } else if (file.isCssLike) {
+                            }
+                            else if (file.isCssLike) {
                                 c = c.replace(/@charset\s+(?:'[^']*'|"[^"]*"|\S*);?/gi, '');
                             }
                         }
@@ -341,11 +348,13 @@ function autoCombine(resList, ret, conf, settings, opt) {
         if (res.type === 'pkg') {
             flushCombine();
             list.push(res);
-        } else {
+        }
+        else {
             if (res.single) {
                 flushCombine();
                 list.push(res);
-            } else {
+            }
+            else {
                 toCombine.push(res);
             }
         }
@@ -373,7 +382,8 @@ function injectJs(jsList, content, ret, settings) {
         if (js.type === 'pkg') {
             uri = ret.map.pkg[js.id].uri;
             file = ret.packMap.packToFile[js.id];
-        } else {
+        }
+        else {
             uri = ret.map.res[js.id].uri;
             file = ret.src[js.id];
         }
@@ -381,7 +391,8 @@ function injectJs(jsList, content, ret, settings) {
             '"></script>\n';
         if (js.head) {
             headScripts += script;
-        } else {
+        }
+        else {
             scripts += script;
         }
     });
@@ -396,7 +407,8 @@ function injectCss(cssList, content, ret, settings) {
         var uri;
         if (css.type === 'pkg') {
             uri = ret.map.pkg[css.id].uri;
-        } else {
+        }
+        else {
             uri = ret.map.res[css.id].uri;
         }
         styles += '<link type="text/css" rel="stylesheet" href="' + uri + '">\n';
@@ -411,7 +423,8 @@ function injectInlineJs(inlineScripts, content, ret, settings) {
     inlineScripts.forEach(function (script) {
         if (script.head) {
             headInlines += script.content;
-        } else {
+        }
+        else {
             inlines += script.content;
         }
     });
@@ -423,7 +436,8 @@ function injectInlineJs(inlineScripts, content, ret, settings) {
 function modHeadContent(content, mod, settings) {
     if (settings.headTag.test(content)) {
         content = content.replace(settings.headTag, mod + '$&');
-    } else if (settings.forceOutput) {
+    }
+    else if (settings.forceOutput) {
         content = mod + content;
     }
     return content;
@@ -432,7 +446,8 @@ function modHeadContent(content, mod, settings) {
 function modBodyContent(content, mod, settings) {
     if (settings.bodyTag.test(content)) {
         content = content.replace(settings.bodyTag, mod + '$&');
-    } else if (settings.forceOutput) {
+    }
+    else if (settings.forceOutput) {
         content += mod;
     }
     return content;
@@ -445,7 +460,8 @@ function injectJsWithPlaceHolder(jsList, content, ret) {
             uri = ret.map.pkg[js.id].uri;
             file = ret.packMap.packToFile[js.id];
             id = js.srcId;
-        } else {
+        }
+        else {
             uri = ret.map.res[js.id].uri;
             file = ret.src[js.id];
             id = js.id;
@@ -464,7 +480,8 @@ function injectCssWithPlaceHolder(cssList, content, ret) {
         if (css.type === 'pkg') {
             uri = ret.map.pkg[css.id].uri;
             id = css.srcId;
-        } else {
+        }
+        else {
             uri = ret.map.res[css.id].uri;
             id = css.id;
         }
@@ -497,11 +514,12 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
     settings.bodyTag = wrapTag(settings.bodyTag);
     var pathMap = getResourcePathMap(ret, conf, settings, opt);
     ret.packMap = getPackMap(ret, conf, settings, opt);
-    //autoCombine模式下，autoReflow必为真
-    if (settings.autoCombine)
+    // autoCombine模式下，autoReflow必为真
+    if (settings.autoCombine) {
         settings.autoReflow = true;
+    }
     fis.util.map(ret.src, function (subpath, file) {
-        if (file.isHtmlLike && file.noMapJs !== false) { //类html文件
+        if (file.useCompile && file.isHtmlLike && file.noMapJs !== false) { // 类html文件
             placeHolders = {};
             var content = file.getContent();
             var result = analyzeHtml(content, pathMap, !settings.autoReflow);
@@ -516,7 +534,8 @@ module.exports = function (ret, conf, settings, opt) { //打包后处理
                 content = injectJs(jsList, content, ret, settings);
                 content = injectCss(cssList, content, ret, settings);
                 content = injectInlineJs(result.resources.inlineScripts, content, ret, settings);
-            } else {
+            }
+            else {
                 content = injectJsWithPlaceHolder(jsList, content, ret);
                 content = injectCssWithPlaceHolder(cssList, content, ret);
                 content = cleanPlaceHolder(content);
