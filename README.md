@@ -1,5 +1,7 @@
 # fis-postpackager-simple
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/hefangshi/fis-postpackager-simple.svg)](https://greenkeeper.io/)
+
 用于自动打包页面零散资源和应用打包资源的[FIS](https://github.com/fex-team/fis/)插件
 
 ## 功能
